@@ -82,7 +82,13 @@ return {
       end
       
       -- LSP server setups
-      local capabilities = require('blink.cmp').get_lsp_capabilities()
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      
+      -- Try to get blink.cmp capabilities if available
+      local ok, blink = pcall(require, 'blink.cmp')
+      if ok then
+        capabilities = blink.get_lsp_capabilities(capabilities)
+      end
       
       -- Rust (handled by rustaceanvim - see below)
       -- Note: rustaceanvim handles rust-analyzer setup automatically
@@ -370,6 +376,7 @@ return {
     dependencies = 'rafamadriz/friendly-snippets',
     version = '*',
     build = 'cargo build --release',
+    event = 'InsertEnter',
     opts = {
       keymap = {
         preset = 'default',
