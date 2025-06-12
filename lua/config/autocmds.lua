@@ -292,3 +292,15 @@ vim.api.nvim_create_autocmd({ "VimEnter", "DirChanged" }, {
   end,
   desc = "Load project-specific .nvim.lua configuration",
 })
+
+-- Help with blink.cmp installation on first run
+vim.api.nvim_create_autocmd("User", {
+  pattern = "LazyInstall",
+  callback = function()
+    -- Check if cargo is available for building blink.cmp
+    if vim.fn.executable('cargo') == 0 then
+      vim.notify("Warning: cargo not found. blink.cmp requires Rust/Cargo to build.\nInstall with: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh", vim.log.levels.WARN)
+    end
+  end,
+  desc = "Check for blink.cmp build dependencies",
+})

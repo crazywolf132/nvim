@@ -82,7 +82,7 @@ return {
       end
       
       -- LSP server setups
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
+      local capabilities = require('blink.cmp').get_lsp_capabilities()
       
       -- Rust (handled by rustaceanvim - see below)
       -- Note: rustaceanvim handles rust-analyzer setup automatically
@@ -364,49 +364,173 @@ return {
     end
   },
   
-  -- Autocompletion plugins
-  { 
-    'hrsh7th/nvim-cmp', 
-    event = 'InsertEnter', 
-    dependencies = {
-      'hrsh7th/cmp-nvim-lsp',
-      'hrsh7th/cmp-buffer',
-      'hrsh7th/cmp-path',
-      'saadparwaiz1/cmp_luasnip',
-      'L3MON4D3/LuaSnip',
-      'rafamadriz/friendly-snippets',
-      'onsails/lspkind.nvim'
-    },
-    config = function()
-      local cmp = require('cmp')
-      local luasnip = require('luasnip')
-      require('luasnip.loaders.from_vscode').lazy_load()  -- load friendly-snippets
+  -- Blink.cmp - Fast completion engine written in Rust
+  {
+    'saghen/blink.cmp',
+    dependencies = 'rafamadriz/friendly-snippets',
+    version = '*',
+    build = 'cargo build --release',
+    opts = {
+      keymap = {
+        preset = 'default',
+        ['<Tab>'] = { 'accept', 'fallback' },
+        ['<C-Space>'] = { 'show', 'show_documentation', 'hide_documentation' },
+        ['<C-j>'] = { 'select_next', 'fallback' },
+        ['<C-k>'] = { 'select_prev', 'fallback' },
+        ['<C-b>'] = { 'scroll_documentation_up', 'fallback' },
+        ['<C-f>'] = { 'scroll_documentation_down', 'fallback' },
+        ['<C-e>'] = { 'hide', 'fallback' },
+      },
       
-      cmp.setup({
-        snippet = {
-          expand = function(args) luasnip.lsp_expand(args.body) end
+      appearance = {
+        use_nvim_cmp_as_default = true,
+        nerd_font_variant = 'mono',
+      },
+      
+      sources = {
+        default = { 'lsp', 'path', 'snippets', 'buffer' },
+        providers = {
+          lsp = {
+            name = 'LSP',
+            module = 'blink.cmp.sources.lsp',
+            enabled = true,
+          },
+          path = {
+            name = 'Path',
+            module = 'blink.cmp.sources.path',
+            score_offset = 3,
+            opts = {
+              trailing_slash = false,
+              label_trailing_slash = true,
+              get_cwd = function(context) return vim.fn.expand(('#%d:p:h'):format(context.bufnr)) end,
+              show_hidden_files_by_default = false,
+            }
+          },
+          snippets = {
+            name = 'Snippets',
+            module = 'blink.cmp.sources.snippets',
+            score_offset = -3,
+            opts = {
+              friendly_snippets = true,
+              search_paths = { vim.fn.stdpath('config') .. '/snippets' },
+              global_snippets = { 'all' },
+              extended_filetypes = {},
+              ignored_filetypes = {},
+            }
+          },
+          buffer = {
+            name = 'Buffer',
+            module = 'blink.cmp.sources.buffer',
+            fallbacks = { 'lsp' },
+            score_offset = -3,
+            opts = {
+              get_bufnrs = function()
+                return vim.iter(vim.api.nvim_list_bufs())
+                  :filter(function(buf) return vim.bo[buf].buftype ~= 'nofile' end)
+                  :totable()
+              end,
+            }
+          },
         },
-        mapping = cmp.mapping.preset.insert({
-          ['<Tab>'] = cmp.mapping.confirm({ select = true }),  -- confirm selection
-          ['<C-Space>'] = cmp.mapping.complete(),              -- manually trigger completion
-          ['<C-j>'] = cmp.mapping.select_next_item(),
-          ['<C-k>'] = cmp.mapping.select_prev_item(),
-        }),
-        sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' }
-        }, {
-          { name = 'buffer' },
-          { name = 'path' }
-        }),
-        formatting = {
-          format = require('lspkind').cmp_format({ 
-            mode = 'symbol_text', 
-            maxwidth = 50 
-          })
-        }
-      })
-    end
+      },
+      
+      completion = {
+        accept = {
+          create_undo_point = true,
+          auto_brackets = {
+            enabled = true,
+            default_brackets = { '(', ')' },
+            override_brackets_for_filetypes = {},
+            force_allow_filetypes = {},
+            blocked_filetypes = {},
+          },
+        },
+        
+        menu = {
+          enabled = true,
+          min_width = 15,
+          max_height = 10,
+          border = 'none',
+          winblend = 0,
+          winhighlight = 'Normal:BlinkCmpMenu,FloatBorder:BlinkCmpMenuBorder,CursorLine:BlinkCmpMenuSelection,Search:None',
+          scrollbar = true,
+          direction_priority = { 's', 'n' },
+          auto_show = true,
+          draw = {
+            treesitter = { 'lsp' },
+            columns = { { 'kind_icon' }, { 'label', 'label_description', gap = 1 }, { 'source_name' } },
+            components = {
+              kind_icon = {
+                ellipsis = false,
+                text = function(ctx) return ctx.kind_icon .. ctx.icon_gap end,
+                highlight = function(ctx) return require('blink.cmp.completion.windows.render.tailwind').get_highlight(ctx) or 'BlinkCmpKind' .. ctx.kind end,
+              },
+              label = {
+                width = { fill = true, max = 60 },
+                text = function(ctx) return ctx.label .. ctx.label_detail end,
+                highlight = function(ctx)
+                  local highlights = {}
+                  for i, idx in ipairs(ctx.label_matched_indices) do
+                    table.insert(highlights, { idx - 1, idx, group = 'BlinkCmpLabelMatch' })
+                  end
+                  return highlights
+                end,
+              },
+              label_description = {
+                width = { max = 30 },
+                text = function(ctx) return ctx.label_description end,
+                highlight = 'BlinkCmpLabelDescription',
+              },
+              source_name = {
+                width = { max = 30 },
+                text = function(ctx) return ctx.source_name end,
+                highlight = 'BlinkCmpSource',
+              },
+            },
+          },
+        },
+        
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 500,
+          update_delay_ms = 50,
+          treesitter_highlighting = true,
+          window = {
+            min_width = 10,
+            max_width = 60,
+            max_height = 20,
+            border = 'padded',
+            winblend = 0,
+            winhighlight = 'Normal:BlinkCmpDoc,FloatBorder:BlinkCmpDocBorder,CursorLine:BlinkCmpDocCursorLine,Search:None',
+            direction_priority = { 'e', 'w', 'n', 's' },
+          },
+        },
+        
+        ghost_text = {
+          enabled = vim.g.ai_cmp == false,
+        },
+      },
+      
+      signature = {
+        enabled = true,
+        trigger = {
+          blocked_trigger_characters = {},
+          blocked_retrigger_characters = {},
+          show_on_insert_on_trigger_character = true,
+        },
+        window = {
+          min_width = 1,
+          max_width = 100,
+          max_height = 10,
+          border = 'padded',
+          winblend = 0,
+          winhighlight = 'Normal:BlinkCmpSignatureHelp,FloatBorder:BlinkCmpSignatureHelpBorder',
+          scrollbar = false,
+          direction_priority = { 'n', 's' },
+        },
+      },
+    },
+    opts_extend = { 'sources.default' },
   },
   
   -- Rust crates version management

@@ -361,20 +361,18 @@ return {
     config = true 
   },
   
-  -- Auto-pairs
+  -- Auto-pairs (with blink.cmp integration)
   { 
     'windwp/nvim-autopairs', 
     event = 'InsertEnter', 
     config = function()
-      require('nvim-autopairs').setup({})
+      require('nvim-autopairs').setup({
+        enable_check_bracket_line = false,
+        check_ts = true,
+      })
       
-      -- Integration with nvim-cmp
-      local cmp_autopairs = require('nvim-autopairs.completion.cmp')
-      local cmp = require('cmp')
-      cmp.event:on(
-        'confirm_done',
-        cmp_autopairs.on_confirm_done()
-      )
+      -- Integration with blink.cmp (handled by blink.cmp's auto_brackets feature)
+      -- Note: blink.cmp has built-in auto-brackets, so nvim-autopairs is optional
     end
   },
   

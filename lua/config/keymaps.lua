@@ -261,6 +261,7 @@ map('n', '<leader>ch', function()
     { cmd = 'bat', name = 'bat', desc = 'Optional: syntax highlighting in previews' },
     { cmd = 'delta', name = 'delta', desc = 'Optional: better git diffs' },
     { cmd = 'fzf', name = 'fzf', desc = 'Required for fzf-lua fuzzy finding' },
+    { cmd = 'cargo', name = 'cargo', desc = 'Required for building blink.cmp (Rust)' },
   }
   
   local results = {}
