@@ -27,7 +27,7 @@ return {
   -- LSPconfig
   { 
     'neovim/nvim-lspconfig', 
-    dependencies = { 'mason-lspconfig.nvim', 'cmp-nvim-lsp' },
+    dependencies = { 'mason-lspconfig.nvim' },
     config = function()
       local lsp = require('lspconfig')
       
