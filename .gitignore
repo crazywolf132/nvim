@@ -1,0 +1,38 @@
+# Neovim session files
+session.vim
+.session
+
+# Lazy.nvim lockfile (optional - some prefer to commit it)
+# lazy-lock.json
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Claude Code specific
+.claude/
+
+# Undo history
+undo/
+
+# Plugin data
+plugin/
+site/
+
+# LSP logs
+lsp.log
+vim.log
+
+# Personal session data
+.session.vim
