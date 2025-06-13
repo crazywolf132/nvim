@@ -304,3 +304,61 @@ vim.api.nvim_create_autocmd("User", {
   end,
   desc = "Check for blink.cmp build dependencies",
 })
+
+-- Handle inlay hint errors gracefully
+vim.api.nvim_create_autocmd("LspAttach", {
+  group = vim.api.nvim_create_augroup("inlay_hint_safety", { clear = true }),
+  callback = function(event)
+    local client = vim.lsp.get_client_by_id(event.data.client_id)
+    if not client then return end
+    
+    -- Disable inlay hints for very large files
+    local lines = vim.api.nvim_buf_line_count(event.buf)
+    if lines > 5000 then
+      if vim.lsp.inlay_hint and vim.lsp.inlay_hint.enable then
+        pcall(vim.lsp.inlay_hint.enable, false, { bufnr = event.buf })
+      end
+      return
+    end
+    
+    -- Add error handler for inlay hint updates
+    if client.supports_method("textDocument/inlayHint") then
+      local orig_handler = vim.lsp.handlers["textDocument/inlayHint"]
+      vim.lsp.handlers["textDocument/inlayHint"] = function(err, result, ctx, config)
+        if err then
+          -- Silently ignore inlay hint errors to prevent disruption
+          return
+        end
+        if orig_handler then
+          -- Wrap the original handler in pcall to catch any rendering errors
+          pcall(orig_handler, err, result, ctx, config)
+        end
+      end
+    end
+  end,
+  desc = "Handle inlay hint errors and disable for large files",
+})
+
+-- Disable inlay hints when file is modified rapidly
+local inlay_hint_timer = nil
+vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+  group = vim.api.nvim_create_augroup("inlay_hint_debounce", { clear = true }),
+  callback = function(event)
+    if not vim.lsp.inlay_hint then return end
+    
+    -- Cancel existing timer
+    if inlay_hint_timer then
+      vim.fn.timer_stop(inlay_hint_timer)
+    end
+    
+    -- Temporarily disable inlay hints during rapid changes
+    pcall(vim.lsp.inlay_hint.enable, false, { bufnr = event.buf })
+    
+    -- Re-enable after a delay
+    inlay_hint_timer = vim.fn.timer_start(1000, function()
+      pcall(vim.lsp.inlay_hint.enable, true, { bufnr = event.buf })
+      inlay_hint_timer = nil
+    end)
+  end,
+  desc = "Debounce inlay hints during rapid text changes",
+})

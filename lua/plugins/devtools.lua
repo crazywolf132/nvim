@@ -190,9 +190,9 @@ return {
           git_icons = true,
           file_icons = true,
           color_icons = true,
-          find_opts = [[-type f -not -path '*/\.git/*' -printf '%P\n']],
-          rg_opts = "--color=never --files --hidden --follow -g '!.git'",
-          fd_opts = "--color=never --type f --hidden --follow --exclude .git",
+          find_opts = [[-type f -not -path '*/\.git/*' -not -path '*/\.next/*' -printf '%P\n']],
+          rg_opts = "--color=never --files --hidden --follow -g '!.git' -g '!.next'",
+          fd_opts = "--color=never --type f --hidden --follow --exclude .git --exclude .next",
         },
         git = {
           files = {
@@ -226,7 +226,7 @@ return {
           git_icons = true,
           file_icons = true,
           color_icons = true,
-          rg_opts = "--column --line-number --no-heading --color=always --smart-case --max-columns=4096 -e",
+          rg_opts = "--column --line-number --no-heading --color=always --smart-case --max-columns=4096 -g '!.next' -e",
           grep_opts = "--binary-files=without-match --line-number --recursive --color=auto --perl-regexp -e",
         },
         args = {
@@ -571,7 +571,8 @@ return {
             return vim.startswith(name, ".")
           end,
           is_always_hidden = function(name, bufnr)
-            return false
+            -- Always hide .next folders
+            return name == ".next"
           end,
         },
         keymaps = {

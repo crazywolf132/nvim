@@ -219,8 +219,18 @@ map('n', '<leader>ck', '<cmd>cprev<cr>zz', { desc = 'Previous quickfix and cente
 map({'n', 'v'}, '0', "getline('.')[0:col('.')-2] =~# '^\\s*$' ? '0' : '^'", { expr = true, desc = 'Smart home' })
 
 -- Toggle inlay hints
-map('n', '<leader>uh', function()
-  vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+map('n', '<leader>ui', function()
+  if vim.lsp.inlay_hint then
+    local ok, enabled = pcall(vim.lsp.inlay_hint.is_enabled)
+    if ok then
+      pcall(vim.lsp.inlay_hint.enable, not enabled)
+      vim.notify("Inlay hints " .. (enabled and "disabled" or "enabled"), vim.log.levels.INFO)
+    else
+      vim.notify("Inlay hints not available", vim.log.levels.WARN)
+    end
+  else
+    vim.notify("Inlay hints not supported in this Neovim version", vim.log.levels.WARN)
+  end
 end, { desc = 'Toggle inlay hints' })
 
 -- Session management

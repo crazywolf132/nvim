@@ -50,7 +50,10 @@ return {
         
         -- Enable inlay hints for Neovim 0.11+
         if vim.lsp.inlay_hint and vim.lsp.inlay_hint.enable then 
-          vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+          -- Wrap in pcall to prevent errors from breaking LSP attach
+          pcall(function()
+            vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+          end)
         end
         
         -- Format on save for LSP servers that support formatting
@@ -469,7 +472,10 @@ return {
             
             -- Enable inlay hints for Neovim 0.11+
             if vim.lsp.inlay_hint and vim.lsp.inlay_hint.enable then 
-              vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+              -- Wrap in pcall to prevent errors from breaking LSP attach
+              pcall(function()
+                vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+              end)
             end
             
             -- Rustacean-specific keymaps
