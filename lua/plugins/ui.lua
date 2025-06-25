@@ -86,7 +86,28 @@ return {
           lualine_a = { 'mode' },
           lualine_b = { 'branch', 'diff' },
           lualine_c = { {'filename', path = 1} },
-          lualine_x = { 'diagnostics', 'encoding', 'filetype' },
+          lualine_x = { 
+            -- Build status component
+            {
+              function()
+                local build_status = require('custom.build-status')
+                local icon, _ = build_status.get_display()
+                return icon
+              end,
+              color = function()
+                local build_status = require('custom.build-status')
+                local _, color = build_status.get_display()
+                return color
+              end,
+              cond = function()
+                local build_status = require('custom.build-status')
+                return build_status.current_state ~= build_status.states.NOT_FOUND
+              end,
+            },
+            'diagnostics', 
+            'encoding', 
+            'filetype' 
+          },
           lualine_y = { 'progress' },
           lualine_z = { 'location' }
         }
@@ -211,6 +232,7 @@ return {
         -- LSP operations (available when LSP attaches)
         { "<leader>c", group = "Code" },
         { "<leader>ca", desc = "Code Actions" },
+        { "<leader>cb", desc = "Run build.sh" },
         { "<leader>cd", desc = "Line Diagnostics" },
         { "<leader>ci", desc = "LSP Info" },
         { "<leader>cm", desc = "Mason Package Manager" },
@@ -393,21 +415,86 @@ return {
       vim.g.VM_set_statusline = 0         -- disable VM statusline
       vim.g.VM_silent_exit = 1            -- exit silently
       vim.g.VM_show_warnings = 0          -- disable warnings
-      vim.g.VM_check_mappings = 0         -- don't check for mapping conflicts
-      vim.g.VM_default_mappings = 0       -- disable default mappings to avoid conflicts
       
-      -- Custom mappings only
+      -- Enable default mappings but customize conflicts
+      vim.g.VM_default_mappings = 1       -- enable default mappings
+      vim.g.VM_leader = '\\'              -- use backslash as VM leader (avoid <leader> conflict)
+      
+      -- Override specific mappings to avoid conflicts
       vim.g.VM_maps = {
-        ['Find Under'] = '<C-d>',           -- start selecting word under cursor
-        ['Find Subword Under'] = '<C-d>',   -- same as above
-        ['Select All'] = '<leader>ma',      -- select all occurrences
-        ['Add Cursor Up'] = '<C-Up>',       -- add cursor above
-        ['Add Cursor Down'] = '<C-Down>',   -- add cursor below
+        -- Core selection
+        ['Find Under'] = '<C-n>',           -- select word under cursor (Ctrl+n)
+        ['Find Subword Under'] = '<C-n>',   -- same as above
+        ['Select All'] = '\\A',             -- select all occurrences
+        ['Select Cursor Down'] = '<M-C-Down>',  -- add cursor down (Alt+Ctrl+Down)
+        ['Select Cursor Up'] = '<M-C-Up>',      -- add cursor up (Alt+Ctrl+Up)
+        
+        -- Visual mode selection
+        ['Visual All'] = '\\A',             -- select all in visual mode
+        ['Visual Add'] = '\\a',             -- add cursor at position
+        ['Visual Find'] = '\\f',            -- find pattern
+        ['Visual Cursors'] = '\\c',         -- create cursors from visual
+        
+        -- Navigation
+        ['Next'] = ']',                     -- go to next cursor
+        ['Previous'] = '[',                 -- go to previous cursor
+        ['Skip'] = 'q',                     -- skip current and find next
+        ['Remove Region'] = 'Q',            -- remove current cursor
+        
+        -- Selection modification
+        ['Increase'] = '+',                 -- expand selection
+        ['Decrease'] = '-',                 -- shrink selection
+        ['Motion ]'] = '}',                 -- motion to next
+        ['Motion ['] = '{',                 -- motion to previous
+        
+        -- Mouse support
+        ['Mouse Cursor'] = '<C-LeftMouse>',     -- add cursor with mouse
+        ['Mouse Word'] = '<C-RightMouse>',      -- select word with mouse
+        ['Mouse Column'] = '<M-C-RightMouse>',  -- column selection with mouse
+        
+        -- Mode switches
+        ['Switch Mode'] = '<Tab>',          -- switch between cursor/extend mode
+        ['Toggle Single Region'] = '\\<Space>', -- toggle single region mode
+        
+        -- Other operations
         ['Undo'] = 'u',
         ['Redo'] = '<C-r>',
         ['Exit'] = '<Esc>',
+        
+        -- Alignment
+        ['Align'] = '\\a',                  -- align cursors
+        ['Align Char'] = '\\<',             -- align by character
+        ['Align Regex'] = '\\>',            -- align by regex
+        
+        -- Text objects in VM
+        ['Inner Word'] = 'iw',
+        ['A Word'] = 'aw',
+        ['Inner Bracket'] = 'i[',
+        ['A Bracket'] = 'a[',
       }
-      vim.g.VM_theme = 'iceblue'
+      
+      -- Better colors
+      vim.g.VM_theme = 'ocean'
+      vim.g.VM_highlight_matches = 'underline'
+      
+      -- Performance settings
+      vim.g.VM_live_editing = 1           -- see changes as you type
+      vim.g.VM_case_setting = 'smart'     -- smart case matching
+      vim.g.VM_use_python = 0             -- don't use python (better performance)
+      
+      -- Show hints
+      vim.g.VM_show_warnings = 1          -- re-enable warnings for learning
+      vim.g.VM_debug = 0
+    end,
+    config = function()
+      -- Additional configuration after plugin loads
+      vim.cmd([[
+        " Fix highlight groups for better visibility
+        highlight VM_Extend guibg=#3b4252 guifg=#d8dee9
+        highlight VM_Cursor guibg=#88c0d0 guifg=#2e3440
+        highlight VM_Insert guibg=#a3be8c guifg=#2e3440
+        highlight VM_Mono guibg=#b48ead guifg=#2e3440
+      ]])
     end,
   },
   

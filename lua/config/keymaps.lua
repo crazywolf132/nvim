@@ -233,6 +233,11 @@ map('n', '<leader>ui', function()
   end
 end, { desc = 'Toggle inlay hints' })
 
+-- Build status
+map('n', '<leader>cb', function()
+  require('custom.build-status').run_build()
+end, { desc = 'Run build.sh' })
+
 -- Session management
 map('n', '<leader>qs', '<cmd>source ~/.config/nvim/session.vim<cr>', { desc = 'Restore last session' })
 
@@ -286,4 +291,23 @@ map('n', '<leader>ch', function()
   
   vim.notify(table.concat(results, '\n'), vim.log.levels.INFO, { title = 'Dependency Check' })
 end, { desc = 'Check external dependencies' })
+
+-- Enhanced keymap search
+map('n', '<leader>fK', function()
+  require('custom.keymap-search').search_keymaps()
+end, { desc = 'Search keymaps (categorized)' })
+
+map('n', '<leader>fk', function()
+  require('custom.keymap-search').search_keymaps_by_feature()
+end, { desc = 'Search keymaps by feature' })
+
+-- Multi-cursor help
+map('n', '<leader>hm', function()
+  require('custom.multi-cursor-help').show_help()
+end, { desc = 'Multi-cursor help' })
+
+-- Multi-cursor practice
+map('n', '<leader>hp', function()
+  require('custom.multi-cursor-practice').show_practice()
+end, { desc = 'Multi-cursor practice' })
 
