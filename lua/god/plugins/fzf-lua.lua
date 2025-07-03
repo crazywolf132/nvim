@@ -26,7 +26,7 @@ return {
                     layout = 'flex',
                     flip_columns = 120,
                     title = true,
-                    title_align = 'center',
+                    title_pos = 'center',
                     delay = 100,
                 },
             },

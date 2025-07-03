@@ -9,6 +9,10 @@ return {
             skip_confirm_for_simple_edits = true,
             cleanup_delay_ms = 1000,
             use_default_keymaps = true,
+            view_options = {
+                -- Show files and directories that start with "."
+                show_hidden = true,
+            },
             win_options = {
                 signcolumn = "auto"
             }

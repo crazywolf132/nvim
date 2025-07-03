@@ -1,6 +1,7 @@
 return {
     "SmiteshP/nvim-navic",
     lazy = true,
+    cond = not vim.g.is_headless,
     opts = {
         icons = {
             File = ' ',

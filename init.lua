@@ -4,6 +4,9 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+-- Detect if running in headless mode
+vim.g.is_headless = vim.fn.has('gui_running') == 0 and (vim.fn.argc() == 0 or vim.fn.exists('$NVIM_HEADLESS') == 1)
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
@@ -28,9 +31,17 @@ vim.o.showmode = false
 --  Schedule the setting after `UiEnter` because it can increase startup-time.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.schedule(function()
-    vim.o.clipboard = 'unnamedplus'
-end)
+if vim.fn.has('nvim-0.10') == 1 then
+    vim.schedule(function()
+        if vim.fn.has('clipboard') == 1 and not vim.g.started_by_firenvim then
+            vim.o.clipboard = 'unnamedplus'
+        end
+    end)
+else
+    if vim.fn.has('clipboard') == 1 then
+        vim.o.clipboard = 'unnamedplus'
+    end
+end
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -90,13 +101,7 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
--- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
--- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
--- is not what someone will guess without a bit more experience.
---
--- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
--- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+-- Terminal mode exit is handled by toggleterm.nvim plugin
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -222,6 +227,7 @@ require('lazy').setup({
     {                       -- Useful plugin to show you pending keybinds.
         'folke/which-key.nvim',
         event = 'VimEnter', -- Sets the loading event to 'VimEnter'
+        cond = not vim.g.is_headless,
         opts = {
             -- delay between pressing a key and opening which-key (milliseconds)
             -- this setting is independent of vim.o.timeoutlen
@@ -409,7 +415,7 @@ require('lazy').setup({
             'WhoIsSethDaniel/mason-tool-installer.nvim',
 
             -- Useful status updates for LSP.
-            { 'j-hui/fidget.nvim',    opts = {} },
+            { 'j-hui/fidget.nvim',    cond = not vim.g.is_headless, opts = {} },
 
             -- Allows extra capabilities provided by blink.cmp
             'saghen/blink.cmp',

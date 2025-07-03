@@ -56,7 +56,7 @@ return {
                                 runBuildScripts = true,
                             },
                             -- Add clippy lints
-                            checkOnSave = {
+                            check = {
                                 command = "clippy",
                                 extraArgs = {
                                     "--",

@@ -1,6 +1,7 @@
 return {
     'goolord/alpha-nvim',
     event = 'VimEnter',
+    cond = not vim.g.is_headless and vim.o.lines > 10,
     config = function()
         local alpha = require('alpha')
         local dashboard = require('alpha.themes.dashboard')
