@@ -1,4 +1,5 @@
 --- locals ---
+local pack = require('pack')
 local o = vim.o
 local opt = vim.opt
 local g = vim.g
@@ -6,72 +7,65 @@ local km = vim.keymap
 local autocmd = vim.api.nvim_create_autocmd
 local bufnr = vim.api.nvim_get_current_buf()
 
---- Add zoop to runtime path ---
-vim.opt.runtimepath:prepend('/Users/brayden/Developer/nvim/zoop')
-
---- zoop package manager setup ---
-local zoop = require('zoop')
-zoop.setup({
-  -- optional: override paths or concurrency
-  -- root = vim.fn.stdpath('data') .. '/site/pack/zoop',
-  -- concurrency = 8,
+--- requirements ---
+pack.add({
+    { src = "nvim-lua/plenary.nvim" }, -- adds plenary required by lots of plugins
+    { src = "echasnovski/mini.nvim" }, -- mini.nvim collection
 })
 
---- requirements ---
-zoop.add('nvim-lua/plenary.nvim')
-zoop.add('echasnovski/mini.nvim')
-
 --- themes ---
-zoop.add('WTFox/jellybeans.nvim', { lazy = false })
-zoop.add('folke/tokyonight.nvim', { lazy = true })
-zoop.add('navarasu/onedark.nvim', { lazy = true })
-zoop.add('shaunsingh/nord.nvim', { lazy = true })
-zoop.add('webhooked/kanso.nvim', { lazy = true })
-zoop.add('Koalhack/darcubox-nvim', { lazy = true })
-zoop.add('stevedylandev/darkmatter-nvim', { lazy = true })
-zoop.add('mcauley-penney/techbase.nvim', { lazy = true })
-zoop.add('mitch1000/backpack.nvim', { lazy = true })
+pack.add({
+    { src = "WTFox/jellybeans.nvim",         lazy = false }, -- jellybeans
+    { src = "folke/tokyonight.nvim",         lazy = true },  -- tokyonight
+    { src = "navarasu/onedark.nvim",         lazy = true },  -- onedark
+    { src = "shaunsingh/nord.nvim",          lazy = true },  -- nord
+    { src = "webhooked/kanso.nvim",          lazy = true },  -- kanso
+    { src = "Koalhack/darcubox-nvim",        lazy = true },  -- Darcubox
+    { src = "stevedylandev/darkmatter-nvim", lazy = true },  -- Darkmatter
+    { src = "mcauley-penney/techbase.nvim",  lazy = true },  -- techbase
+    { src = "mitch1000/backpack.nvim", lazy = true }, -- backpack
+})
 
 -- require "jellybeans".setup {
 --     transparent = true
 -- }
--- Safe theme setup
-pcall(function()
-  require "backpack".setup {
-      transparent = true,
-      theme = "dark",
-      contrast = "medium", -- medium, high, extreme
-  }
-  vim.cmd.colorscheme("backpack")
-end)
+require "backpack".setup {
+    transparent = true,
+    theme = "dark",
+    contrast = "medium", -- medium, high, extreme
+}
+vim.cmd.colorscheme("backpack")
 vim.cmd([[ set notermguicolors ]])
 -- vim.cmd.colorscheme("jellybeans")
 
 --- lsp ---
-zoop.add('nvim-treesitter/nvim-treesitter', {
-    lazy = false,
-    build = ":TSUpdate",
+pack.add({
+    { src = "nvim-lua/plenary.nvim" }, -- adds plenary required by lots of plugins
+    {
+        src = "nvim-treesitter/nvim-treesitter",
+        version = "master",
+        build = ":TSUpdate",
+        lazy = false
+    },                                                                 -- syntax highlighting
+    { src = "saghen/blink.cmp",     build = "cargo build --release" }, -- blink completion on master
+    { src = "mason-org/mason.nvim" },                                  -- mason for language server install
+    { src = "neovim/nvim-lspconfig" },                                 -- core LSP configs
+    { src = "williamboman/mason-lspconfig.nvim" },                     -- mason bridge for lspconfig
+    { src = "mrcjkb/rustaceanvim" },                                   -- better rust LSP
+    { src = "saecki/crates.nvim" },                                    -- better crate helpers
 })
-zoop.add('saghen/blink.cmp', { build = "cargo build --release" })
-zoop.add('mason-org/mason.nvim')
-zoop.add('neovim/nvim-lspconfig')
-zoop.add('williamboman/mason-lspconfig.nvim')
-zoop.add('mrcjkb/rustaceanvim')
-zoop.add('saecki/crates.nvim')
 
 local langs = { 'lua_ls', 'gopls', 'jsonls', 'yamlls', 'bashls', 'html', 'cssls', 'pyright', 'emmet_ls' }
 
 -- LSP: install and attach
-pcall(function()
-  require('mason').setup {
-      ensure_installed = langs,
-      pip = {
-          upgrade_pip = true,
-          install_args = { "--no-cache-dir" },
-      }
-  }
-  require('mason-lspconfig').setup({ ensure_installed = langs })
-end)
+require('mason').setup {
+    ensure_installed = langs,
+    pip = {
+        upgrade_pip = true,
+        install_args = { "--no-cache-dir" },
+    }
+}
+require('mason-lspconfig').setup({ ensure_installed = langs })
 
 -- Basic LSP keymaps so gd uses LSP definition (not Vim's local declaration)
 autocmd('LspAttach', {
@@ -91,60 +85,61 @@ autocmd('LspAttach', {
     end,
 })
 
-pcall(function()
-  local lspconfig = require('lspconfig')
-  local ok_mlsp, mlsp = pcall(require, 'mason-lspconfig')
-  if ok_mlsp and type(mlsp.setup_handlers) == 'function' then
-      mlsp.setup_handlers({
-          function(server)
-              if server == 'rust_analyzer' then
-                  -- Let rustaceanvim manage rust-analyzer
-                  return
-              end
-              lspconfig[server].setup({})
-          end,
-          -- Explicit no-op for rust to be extra safe
-          ['rust_analyzer'] = function() end,
-      })
-  else
-      -- Fallback: directly setup our desired servers
-      for _, server in ipairs(langs) do
-          if server ~= 'rust_analyzer' then
-              lspconfig[server].setup({})
-          end
-      end
-  end
-end)
+local lspconfig = require('lspconfig')
+local ok_mlsp, mlsp = pcall(require, 'mason-lspconfig')
+if ok_mlsp and type(mlsp.setup_handlers) == 'function' then
+    mlsp.setup_handlers({
+        function(server)
+            if server == 'rust_analyzer' then
+                -- Let rustaceanvim manage rust-analyzer
+                return
+            end
+            lspconfig[server].setup({})
+        end,
+        -- Explicit no-op for rust to be extra safe
+        ['rust_analyzer'] = function() end,
+    })
+else
+    -- Fallback: directly setup our desired servers
+    for _, server in ipairs(langs) do
+        if server ~= 'rust_analyzer' then
+            lspconfig[server].setup({})
+        end
+    end
+end
 
-pcall(function()
-  require "nvim-treesitter.configs".setup {
-      ensure_installed = { "lua", "vim", "markdown", "markdown_inline", "bash", "python", "rust", "typescript", "javascript", "css" },
-      highlight = {
-          enable = true,
-      },
-  }
-end)
+-- auto fold imports
+-- autocmd("LspNotify", {
+--     callback = function(args)
+--         if args.data.method == "textDocument/didOpen" then
+--             vim.lsp.foldclose('imports', vim.fn.bufwinid(args.buf))
+--         end
+--     end,
+-- })
 
-pcall(function()
-  require "blink.cmp".setup {
-      keymap = { preset = "super-tab" },
-      appearance = {
-          use_nvim_cmp_as_default = true,
-          nerd_font_variant = 'mono'
-      },
-      signature = { enabled = true },
-      -- Prefer Rust fuzzy engine if present; pinning to a tag allows prebuilt download.
-      fuzzy = {
-          implementation = 'prefer_rust',
-          prebuilt_binaries = {
-              -- If you ever see version mismatch warnings, keep this true
-              -- or run :ZoopSync to rebuild at the pinned tag.
-              ignore_version_mismatch = true,
-          },
-      },
-  }
-end)
-
+require "nvim-treesitter.configs".setup {
+    ensure_installed = { "lua", "vim", "markdown", "markdown_inline", "bash", "python", "rust", "typescript", "javascript", "css" },
+    highlight = {
+        enable = true,
+    },
+}
+require "blink.cmp".setup {
+    keymap = { preset = "super-tab" },
+    appearance = {
+        use_nvim_cmp_as_default = true,
+        nerd_font_variant = 'mono'
+    },
+    signature = { enabled = true },
+    -- Prefer Rust fuzzy engine if present; pinning to a tag allows prebuilt download.
+    fuzzy = {
+        implementation = 'prefer_rust',
+        prebuilt_binaries = {
+            -- If you ever see version mismatch warnings, keep this true
+            -- or run :PackSync to rebuild at the pinned tag.
+            ignore_version_mismatch = true,
+        },
+    },
+}
 g.rustaceanvim = {
     -- Plugin configuration
     tools = {
@@ -235,203 +230,190 @@ g.rustaceanvim = {
     }
 }
 
-pcall(function()
-  require "crates".setup {
-      popup = {
-          autofocus = true,
-          border = "rounded"
-      }
-  }
-end)
+require "crates".setup {
+    popup = {
+        autofocus = true,
+        border = "rounded"
+    }
+}
 
 --- completion ---
 
 --- general ---
-pcall(function() require "mini.ai".setup {} end)
-pcall(function()
-  require "mini.comment".setup {
-      mappings = {
-          comment = "gc",
-          comment_line = "gcc",
-          comment_visual = "gc",
-          textobject = "gc"
-      }
-  }
-end)
-pcall(function() require "mini.pairs".setup {} end)
-pcall(function()
-  require "mini.surround".setup {
-      mappings = {
-          add = 'sa',            -- Add surrounding in Normal and Visual modes
-          delete = 'sd',         -- Delete surrounding
-          find = 'sf',           -- Find surrounding (to the right)
-          find_left = 'sF',      -- Find surrounding (to the left)
-          highlight = 'sh',      -- Highlight surrounding
-          replace = 'sr',        -- Replace surrounding
-          update_n_lines = 'sn', -- Update `n_lines`
+require "mini.ai".setup {}
+require "mini.comment".setup {
+    mappings = {
+        comment = "gc",
+        comment_line = "gcc",
+        comment_visual = "gc",
+        textobject = "gc"
+    }
+}
+require "mini.pairs".setup {}
+require "mini.surround".setup {
+    mappings = {
+        add = 'sa',            -- Add surrounding in Normal and Visual modes
+        delete = 'sd',         -- Delete surrounding
+        find = 'sf',           -- Find surrounding (to the right)
+        find_left = 'sF',      -- Find surrounding (to the left)
+        highlight = 'sh',      -- Highlight surrounding
+        replace = 'sr',        -- Replace surrounding
+        update_n_lines = 'sn', -- Update `n_lines`
 
-          suffix_last = 'l',     -- Suffix to search with "prev" method
-          suffix_next = 'n',     -- Suffix to search with "next" method
-      },
-  }
-end)
-pcall(function() require "mini.jump2d".setup {} end)
+        suffix_last = 'l',     -- Suffix to search with "prev" method
+        suffix_next = 'n',     -- Suffix to search with "next" method
+    },
+}
+require "mini.jump2d".setup {}
 
 --- coding ---
-zoop.add('supermaven-inc/supermaven-nvim')
-zoop.add('ruifm/gitlinker.nvim')
+pack.add({
+  { src = "supermaven-inc/supermaven-nvim" }, -- ai autocomplete
+  { src = "ruifm/gitlinker.nvim" },          -- copy/open Git remote links
+})
 
-pcall(function()
-  require "supermaven-nvim".setup {
-    keymaps = {
-      accept_suggestion = "<Tab>",
-      clear_suggestion = "<C-]>",
-      accept_word = "<C-j>",
-    },
-    log_level = "warn",
-  }
-end)
+require "supermaven-nvim".setup {
+  keymaps = {
+    accept_suggestion = "<Tab>",
+    clear_suggestion = "<C-]>",
+    accept_word = "<C-j>",
+  },
+  log_level = "warn",
+}
 
 -- Git remote link copier
-pcall(function()
-  require('gitlinker').setup({
-    opts = {
-      -- Copy to system clipboard by default
-      action_callback = require('gitlinker.actions').copy_to_clipboard,
-      add_current_line_on_normal_mode = true,
-      print_url = false,
-    },
-  })
-end)
+require('gitlinker').setup({
+  opts = {
+    -- Copy to system clipboard by default
+    action_callback = require('gitlinker.actions').copy_to_clipboard,
+    add_current_line_on_normal_mode = true,
+    print_url = false,
+  },
+})
+
 
 --- ui ---
-zoop.add('stevearc/oil.nvim')
-zoop.add('nvim-tree/nvim-web-devicons')
-zoop.add('benomahony/oil-git.nvim')
-zoop.add('mluders/comfy-line-numbers.nvim')
-zoop.add('folke/twilight.nvim')
-zoop.add('mbbill/undotree')
-zoop.add('akinsho/toggleterm.nvim')
-zoop.add('nvim-lualine/lualine.nvim')
-zoop.add('dmtrKovalenko/fff.nvim', { build = "cargo build --release" })
-zoop.add('folke/which-key.nvim')
+pack.add({
+    { src = "stevearc/oil.nvim" },               -- oil file explorer
+    { src = "nvim-tree/nvim-web-devicons" },     -- icons for files
+    { src = "benomahony/oil-git.nvim" },         -- git status in oil
+    { src = "mluders/comfy-line-numbers.nvim" }, -- Easier relative line numbers
+    { src = "folke/twilight.nvim" },             -- Only highlight what you are working on
+    { src = "mbbill/undotree" },                 -- better undo tree
+    { src = 'akinsho/toggleterm.nvim' },         -- toggle terminal
+    { src = 'nvim-lualine/lualine.nvim' }, -- lualine
+    { src = "dmtrKovalenko/fff.nvim", lazy = true, build = "cargo build --release" }, -- fastest file searcher.
+    { src = "folke/which-key.nvim" },            -- which-key helper
+})
 
-pcall(function() require "mini.pick".setup {} end)
-pcall(function()
-  require "oil".setup {
-      default_file_explorer = true,
-      delete_to_trash = true,
-      skip_confirm_for_simple_edits = true,
-      cleanup_delay_ms = 100, -- Reduced from 1000ms for better performance
-      use_default_keymaps = true,
-      view_options = {
-          show_hidden = false, -- Changed to false for better performance
-          is_always_hidden = function(name, bufnr)
-              return vim.startswith(name, ".git")
-          end,
-      },
-      win_options = {
-          signcolumn = "auto"
-      },
-      keymaps = {
-          ["<C-s>"] = {
-              callback = function()
-                  require("oil").save()
-              end,
-              mode = "n",
-              desc = "Save changes in Oil"
-          },
-      }
-  }
-end)
-pcall(function()
-  require "twilight".setup {
-      dimming = {
-          alpha = 0.3, -- amount of dimming
-          -- we try to get the foreground from the hightlight groups or fallback color
-          color = { "Normal", "#ffffff" },
-          term_bg = "#000000", -- if guibg=NONE, this will be used to calculate text color
-          inactive = true,     -- when true, other windows will be fully dimmed (unless they contain the same buffer)
-      },
-      context = 7,             -- the amount of lines we will try and show around the current line
-      treesitter = true,       -- use treesitter when available for the filetype
-      -- treesitter is used to automatically expand the visible text,
-      -- but you can further control the types of nodes that should always be fully expanded
-      expand = { -- for treesitter, we always try to expand to the top-most ancestor with these types
-          "function",
-          "method",
-          "table",
-          "if_statement",
-      },
-      exclude = {}, -- exclude these filetypes
-  }
-end)
-pcall(function()
-  require "toggleterm".setup {
-      open_mapping = [[<C-\>]],
-      hide_numbers = true,
-      shade_terminal = true,
-      shade_filetypes = {},
-      shading_factor = 2,
-      start_in_insert = true,
-      insert_mappings = true,
-      terminal_mappings = true,
-      persist_size = true,
-      persist_mode = true,
-      direction = 'float',
-      close_on_exit = true,
-      shell = vim.o.shell,
-      auto_scroll = true,
-      float_opts = {
-          border = 'curved',
-          width = function()
-              return math.floor(o.columns * 0.9)
-          end,
-          height = function()
-              return math.floor(o.lines * 0.9)
-          end,
-          winblend = 3,
-      },
-      winbar = {
-          enabled = false,
-          name_formatter = function(term)
-              return term.name
-          end
-      },
-  }
-end)
+require "mini.pick".setup {}
+require "oil".setup {
+    default_file_explorer = true,
+    delete_to_trash = true,
+    skip_confirm_for_simple_edits = true,
+    cleanup_delay_ms = 100, -- Reduced from 1000ms for better performance
+    use_default_keymaps = true,
+    view_options = {
+        show_hidden = false, -- Changed to false for better performance
+        is_always_hidden = function(name, bufnr)
+            return vim.startswith(name, ".git")
+        end,
+    },
+    win_options = {
+        signcolumn = "auto"
+    },
+    keymaps = {
+        ["<C-s>"] = {
+            callback = function()
+                require("oil").save()
+            end,
+            mode = "n",
+            desc = "Save changes in Oil"
+        },
+    }
+}
+require "twilight".setup {
+    dimming = {
+        alpha = 0.3, -- amount of dimming
+        -- we try to get the foreground from the hightlight groups or fallback color
+        color = { "Normal", "#ffffff" },
+        term_bg = "#000000", -- if guibg=NONE, this will be used to calculate text color
+        inactive = true,     -- when true, other windows will be fully dimmed (unless they contain the same buffer)
+    },
+    context = 7,             -- the amount of lines we will try and show around the current line
+    treesitter = true,       -- use treesitter when available for the filetype
+    -- treesitter is used to automatically expand the visible text,
+    -- but you can further control the types of nodes that should always be fully expanded
+    expand = { -- for treesitter, we always try to expand to the top-most ancestor with these types
+        "function",
+        "method",
+        "table",
+        "if_statement",
+    },
+    exclude = {}, -- exclude these filetypes
+}
+require "toggleterm".setup {
+    open_mapping = [[<C-\>]],
+    hide_numbers = true,
+    shade_terminal = true,
+    shade_filetypes = {},
+    shading_factor = 2,
+    start_in_insert = true,
+    insert_mappings = true,
+    terminal_mappings = true,
+    persist_size = true,
+    persist_mode = true,
+    direction = 'float',
+    close_on_exit = true,
+    shell = vim.o.shell,
+    auto_scroll = true,
+    float_opts = {
+        border = 'curved',
+        width = function()
+            return math.floor(o.columns * 0.9)
+        end,
+        height = function()
+            return math.floor(o.lines * 0.9)
+        end,
+        winblend = 3,
+    },
+    winbar = {
+        enabled = false,
+        name_formatter = function(term)
+            return term.name
+        end
+    },
+}
 
-local Terminal, lazygit
-pcall(function()
-  Terminal = require('toggleterm.terminal').Terminal
-  lazygit = Terminal:new({
-      cmd = "lazygit",
-      dir = "git_dir",
-      direction = "float",
-      float_opts = {
-          border = "rounded",
-      },
-      on_open = function(term)
-          vim.cmd("startinsert!")
-          km.set('n', 'q', '<cmd>close<CR>', { buffer = term.bufnr })
-      end,
-      on_close = function(_)
-          vim.cmd("startinsert!")
-      end,
-  })
-end)
+-- Simple command to pull updates and run build hooks
+vim.api.nvim_create_user_command('PackSync', function()
+  require('pack').update_all()
+end, {})
+
+local Terminal = require('toggleterm.terminal').Terminal
+local lazygit = Terminal:new({
+    cmd = "lazygit",
+    dir = "git_dir",
+    direction = "float",
+    float_opts = {
+        border = "rounded",
+    },
+    on_open = function(term)
+        vim.cmd("startinsert!")
+        km.set('n', 'q', '<cmd>close<CR>', { buffer = term.bufnr })
+    end,
+    on_close = function(_)
+        vim.cmd("startinsert!")
+    end,
+})
 
 function _LAZYGIT_TOGGLE()
-  if lazygit then
     lazygit:toggle()
-  end
 end
 
-pcall(function()
-  require 'lualine'.setup {
-    theme = 'auto',
-  }
-end)
+require 'lualine'.setup {
+  theme = 'auto',
+}
 
 -- which-key: show keybinding hints
 pcall(function()
@@ -463,7 +445,6 @@ pcall(function()
     }, { prefix = '<leader>' })
   end
 end)
-
 --- smart save helper ---
 local function smart_save()
   local buf = vim.api.nvim_get_current_buf()
@@ -514,7 +495,6 @@ local function smart_save()
   end
   vim.notify('Save failed: ' .. msg, vim.log.levels.ERROR)
 end
-
 --- settings ---
 -- line numbers
 o.number = true         -- show line numbers
@@ -640,7 +620,7 @@ km.set('n', 'ff', function() require('fff').find_files() end, { silent = true, d
 km.set('n', '<leader>/', ':Pick grep_live<CR>', { silent = true, desc = "find in files" })
 km.set('n', '<leader>?', ':Pick help<CR>', { silent = true, desc = "search help" })
 km.set('n', '<leader>b', ':Pick buffers<CR>', { silent = true, desc = "search buffers" })
-km.set('n', '<leader>u', ':ZoopSync<CR>', { silent = true, desc = "update plugins" })
+km.set('n', '<leader>u', ':lua vim.pack.update(nil, { force = true })<CR>', { silent = true, desc = "update plugins" })
 
 km.set('n', '<leader>U', ':UndotreeToggle<CR>', { silent = true, desc = "undo tree" })
 
