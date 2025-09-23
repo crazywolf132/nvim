@@ -1,5 +1,7 @@
+local env = require("config.env")
 local map = vim.keymap.set
 local opts = { silent = true }
+local use_supermaven = env.uses_supermaven()
 
 local function save()
   vim.cmd.write()
@@ -13,6 +15,14 @@ map("i", "<C-s>", save, opts)
 map("n", "<leader>ww", "<cmd>write<CR>", opts)
 map("n", "<leader>qq", "<cmd>confirm quit<CR>", opts)
 map("n", "<leader>h", "<cmd>nohlsearch<CR>", opts)
+map(
+  "n",
+  "<leader>ti",
+  function()
+    require("config.lsp").toggle_inlay_hints()
+  end,
+  vim.tbl_extend("keep", { desc = "Toggle inlay hints" }, opts)
+)
 map("n", "<leader>bd", "<cmd>bdelete<CR>", opts)
 map("n", "<leader>`", "<cmd>b#<CR>", opts)
 map("n", "<leader>bb", function()
@@ -32,19 +42,40 @@ map("n", "<C-h>", "<C-w>h", opts)
 map("n", "<C-j>", "<C-w>j", opts)
 map("n", "<C-k>", "<C-w>k", opts)
 map("n", "<C-l>", "<C-w>l", opts)
-map("n", "<leader>ai", function()
-  require("lazy").load({ plugins = { "supermaven-nvim" } })
+map("n", "<C-a>", "ggVG", vim.tbl_extend("keep", { desc = "Select entire file" }, opts))
 
-  local ok, api = pcall(require, "supermaven-nvim.api")
-  if not ok then
-    vim.notify("Supermaven is not available", vim.log.levels.ERROR, { title = "Supermaven" })
-    return
-  end
+if use_supermaven then
+  map("n", "<leader>ai", function()
+    require("lazy").load({ plugins = { "supermaven-nvim" } })
 
-  api.toggle()
-  local status = api.is_running()
-  local message = status and "Supermaven enabled" or "Supermaven disabled"
-  local level = status and vim.log.levels.INFO or vim.log.levels.WARN
-  vim.notify(message, level, { title = "Supermaven" })
-  vim.cmd("redrawstatus")
-end, vim.tbl_extend("keep", { desc = "Toggle Supermaven AI" }, opts))
+    local ok, api = pcall(require, "supermaven-nvim.api")
+    if not ok then
+      vim.notify("Supermaven is not available", vim.log.levels.ERROR, { title = "Supermaven" })
+      return
+    end
+
+    api.toggle()
+    local status = api.is_running()
+    local message = status and "Supermaven enabled" or "Supermaven disabled"
+    local level = status and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(message, level, { title = "Supermaven" })
+    vim.cmd("redrawstatus")
+  end, vim.tbl_extend("keep", { desc = "Toggle Supermaven AI" }, opts))
+else
+  map("n", "<leader>ai", function()
+    require("lazy").load({ plugins = { "copilot.lua" } })
+
+    local ok, suggestion = pcall(require, "copilot.suggestion")
+    if not ok then
+      vim.notify("Copilot is not available", vim.log.levels.ERROR, { title = "Copilot" })
+      return
+    end
+
+    suggestion.toggle_auto_trigger()
+    local enabled = vim.b.copilot_suggestion_auto_trigger ~= false
+    local message = enabled and "Copilot enabled" or "Copilot disabled"
+    local level = enabled and vim.log.levels.INFO or vim.log.levels.WARN
+    vim.notify(message, level, { title = "Copilot" })
+    vim.cmd("redrawstatus")
+  end, vim.tbl_extend("keep", { desc = "Toggle Copilot AI" }, opts))
+end

@@ -8,7 +8,15 @@ end
 
 function M.capabilities()
   if not cached_capabilities then
-    cached_capabilities = require("blink.cmp").get_lsp_capabilities()
+    local ok, blink = pcall(require, "blink.cmp")
+    if ok and type(blink.get_lsp_capabilities) == "function" then
+      cached_capabilities = blink.get_lsp_capabilities()
+    else
+      local base = vim.lsp.protocol.make_client_capabilities()
+      local cmp_ok, cmp = pcall(require, "cmp_nvim_lsp")
+      -- fall back to cmp_nvim_lsp if available, otherwise use base capabilities
+      cached_capabilities = cmp_ok and cmp.default_capabilities and cmp.default_capabilities(base) or base
+    end
   end
   return cached_capabilities
 end
@@ -21,6 +29,7 @@ function M.on_attach(client, bufnr)
   buf_map(bufnr, "n", "K", vim.lsp.buf.hover, "Hover")
   buf_map(bufnr, "n", "<leader>rn", vim.lsp.buf.rename, "Rename")
   buf_map(bufnr, { "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code Action")
+  buf_map(bufnr, { "n", "v" }, "<C-.>", vim.lsp.buf.code_action, "Code Action")
   buf_map(bufnr, "n", "<leader>lf", function()
     vim.lsp.buf.format({ async = true })
   end, "Format")
@@ -37,7 +46,41 @@ function M.on_attach(client, bufnr)
     elseif type(vim.lsp.inlay_hint) == "table" and vim.lsp.inlay_hint.enable then
       vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
     end
+    pcall(vim.api.nvim_buf_set_var, bufnr, "inlay_hints_enabled", true)
   end
+end
+
+function M.toggle_inlay_hints(bufnr)
+  local inlay_hint = vim.lsp.inlay_hint
+  if not inlay_hint then
+    vim.notify("Inlay hints are not supported in this version of Neovim", vim.log.levels.WARN, { title = "LSP" })
+    return
+  end
+
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local function current_state()
+    local ok, value = pcall(vim.api.nvim_buf_get_var, bufnr, "inlay_hints_enabled")
+    if ok then
+      return value
+    end
+    if type(inlay_hint) == "table" and inlay_hint.is_enabled then
+      return inlay_hint.is_enabled({ bufnr = bufnr })
+    end
+    return false
+  end
+
+  local new_state = not current_state()
+
+  if type(inlay_hint) == "function" then
+    inlay_hint(bufnr, new_state)
+  elseif type(inlay_hint) == "table" and inlay_hint.enable then
+    inlay_hint.enable(new_state, { bufnr = bufnr })
+  else
+    return
+  end
+
+  pcall(vim.api.nvim_buf_set_var, bufnr, "inlay_hints_enabled", new_state)
 end
 
 return M

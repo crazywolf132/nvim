@@ -1,4 +1,7 @@
-return {
+local env = require("config.env")
+local use_supermaven = env.uses_supermaven()
+
+local plugins = {
   {
     "rose-pine/neovim",
     name = "rose-pine",
@@ -175,7 +178,6 @@ return {
       },
       highlight = { enable = true },
       indent = { enable = true },
-      autotag = { enable = true },
     },
     config = function(_, opts)
       require("nvim-treesitter.configs").setup(opts)
@@ -345,7 +347,22 @@ return {
     end,
   },
   {
+    "folke/todo-comments.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    event = "VeryLazy",
+    opts = {},
+    config = function(_, opts)
+      require("todo-comments").setup(opts)
+    end,
+    keys = {
+      { "]t", function() require("todo-comments").jump_next() end, desc = "Next todo comment" },
+      { "[t", function() require("todo-comments").jump_prev() end, desc = "Previous todo comment" },
+      { "<leader>st", "<cmd>TodoQuickFix<CR>", desc = "Todo quickfix" },
+    },
+  },
+  {
     "supermaven-inc/supermaven-nvim",
+    enabled = use_supermaven,
     event = "InsertEnter",
     cmd = {
       "SupermavenStart",
@@ -389,7 +406,7 @@ return {
     opts = {
       ensure_installed = {
         "lua_ls",
-        "tsserver",
+        "ts_ls",
         "eslint",
         "pyright",
         "gopls",
@@ -410,7 +427,7 @@ return {
             },
           },
         },
-        tsserver = { enabled = false },
+        ts_ls = { enabled = false },
         eslint = {
           settings = {
             workingDirectory = { mode = "auto" },
@@ -606,3 +623,38 @@ return {
     end,
   },
 }
+
+if not use_supermaven then
+  table.insert(plugins, {
+    "zbirenbaum/copilot.lua",
+    cmd = "Copilot",
+    event = "InsertEnter",
+    opts = {
+      panel = { enabled = false },
+      suggestion = {
+        auto_trigger = true,
+        keymap = {
+          accept = false,
+        },
+      },
+    },
+    config = function(_, opts)
+      require("copilot").setup(opts)
+
+      local suggestion = require("copilot.suggestion")
+      local termcodes = function(str)
+        return vim.api.nvim_replace_termcodes(str, true, false, true)
+      end
+
+      vim.keymap.set("i", "<C-]>", function()
+        if suggestion.is_visible() then
+          suggestion.accept()
+          return ""
+        end
+        return termcodes("<C-]>")
+      end, { expr = true, silent = true, desc = "Copilot accept suggestion" })
+    end,
+  })
+end
+
+return plugins

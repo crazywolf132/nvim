@@ -9,6 +9,20 @@ autocmd("TextYankPost", {
   end,
 })
 
+local biome_group = augroup("BiomeFormat", { clear = true })
+autocmd("BufWritePre", {
+  group = biome_group,
+  pattern = { "*.ts", "*.tsx", "*.mts", "*.cts", "*.js", "*.jsx", "*.mjs", "*.cjs" },
+  callback = function(event)
+    local ok, formatting = pcall(require, "config.formatting")
+    if not ok then
+      vim.notify("Failed to load formatting helpers", vim.log.levels.ERROR, { title = "Biome" })
+      return
+    end
+    formatting.maybe_format_with_biome(event.buf)
+  end,
+})
+
 autocmd("BufReadPost", {
   desc = "Restore cursor position when reopening buffers",
   callback = function(event)
