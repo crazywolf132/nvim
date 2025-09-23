@@ -236,9 +236,10 @@ local function build_config()
       local names = {}
       local seen = {}
       for _, client in ipairs(clients) do
-        if not client.name:find("GitHub Copilot") and not seen[client.name] then
-          names[#names + 1] = client.name
-          seen[client.name] = true
+        local raw_name = client.name or ""
+        if not raw_name:lower():find("copilot") and not seen[raw_name] then
+          names[#names + 1] = raw_name
+          seen[raw_name] = true
         end
       end
       if vim.tbl_isempty(names) then return "" end

@@ -484,7 +484,17 @@ local plugins = {
     config = function(_, opts)
       local lsp = require("config.lsp")
       local lspconfig = require("lspconfig")
-      local mason_lspconfig = require("mason-lspconfig")
+
+      local mason_ok, mason_lspconfig = pcall(require, "mason-lspconfig")
+      if not mason_ok then
+        vim.notify("mason-lspconfig is not available", vim.log.levels.ERROR, { title = "LSP" })
+        return
+      end
+
+      if type(mason_lspconfig.setup) ~= "function" then
+        vim.notify("mason-lspconfig.setup is unavailable", vim.log.levels.ERROR, { title = "LSP" })
+        return
+      end
 
       local servers = opts.servers or {}
 
@@ -492,6 +502,11 @@ local plugins = {
         ensure_installed = opts.ensure_installed or vim.tbl_keys(servers),
         automatic_installation = false,
       })
+
+      if type(mason_lspconfig.setup_handlers) ~= "function" then
+        vim.notify("mason-lspconfig.setup_handlers is unavailable", vim.log.levels.ERROR, { title = "LSP" })
+        return
+      end
 
       mason_lspconfig.setup_handlers({
         function(server_name)

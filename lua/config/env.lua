@@ -14,11 +14,20 @@ end
 
 M.hostname = current_hostname()
 M.supermaven_hosts = {
-  ["braydens-macbook-pro.local"] = true,
+  "braydens-macbook-pro",
 }
 
+local function matches_any(host, patterns)
+  for _, pattern in ipairs(patterns) do
+    if host == pattern or host:find(pattern, 1, true) then
+      return true
+    end
+  end
+  return false
+end
+
 function M.uses_supermaven()
-  return M.supermaven_hosts[M.hostname] or false
+  return matches_any(M.hostname, M.supermaven_hosts)
 end
 
 return M
