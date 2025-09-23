@@ -22,14 +22,23 @@ function M.capabilities()
 end
 
 function M.on_attach(client, bufnr)
+  local function open_code_actions()
+    local ok, fzf = pcall(require, "fzf-lua")
+    if ok and type(fzf.lsp_code_actions) == "function" then
+      fzf.lsp_code_actions()
+      return
+    end
+    vim.lsp.buf.code_action()
+  end
+
   buf_map(bufnr, "n", "gd", vim.lsp.buf.definition, "Goto Definition")
   buf_map(bufnr, "n", "gD", vim.lsp.buf.declaration, "Goto Declaration")
   buf_map(bufnr, "n", "gi", vim.lsp.buf.implementation, "Goto Implementation")
   buf_map(bufnr, "n", "gr", vim.lsp.buf.references, "Goto References")
   buf_map(bufnr, "n", "K", vim.lsp.buf.hover, "Hover")
   buf_map(bufnr, "n", "<leader>rn", vim.lsp.buf.rename, "Rename")
-  buf_map(bufnr, { "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, "Code Action")
-  buf_map(bufnr, { "n", "v" }, "<C-.>", vim.lsp.buf.code_action, "Code Action")
+  buf_map(bufnr, { "n", "v" }, "<leader>ca", open_code_actions, "Code Action")
+  buf_map(bufnr, { "n", "v" }, "<leader>.", open_code_actions, "Quick Fix")
   buf_map(bufnr, "n", "<leader>lf", function()
     vim.lsp.buf.format({ async = true })
   end, "Format")

@@ -34,7 +34,15 @@ local plugins = {
       { "<leader><leader>", function() require("fff").find_files() end, desc = "Find files" },
     },
   },
-  {"ibhagwan/fzf-lua"},
+  {
+    "ibhagwan/fzf-lua",
+    opts = {},
+    config = function(_, opts)
+      local fzf = require("fzf-lua")
+      fzf.setup(opts)
+      fzf.register_ui_select()
+    end,
+  },
   {'j-morano/buffer_manager.nvim', dependencies = {'nvim-lua/plenary.nvim'}},
   {
     "folke/snacks.nvim",
@@ -97,6 +105,29 @@ local plugins = {
       { "<C-\\>", function() Snacks.terminal() end, desc = "Terminal" },
     }
     
+  },
+  {
+    "folke/trouble.nvim",
+    cmd = "Trouble",
+    opts = {},
+    keys = {
+      {
+        "<leader>ld",
+        function()
+          require("trouble").toggle("diagnostics")
+        end,
+        desc = "Diagnostics (Trouble)",
+      },
+      {
+        "<leader>le",
+        function()
+          require("trouble").toggle("diagnostics", {
+            filter = { severity = vim.diagnostic.severity.ERROR },
+          })
+        end,
+        desc = "Errors (Trouble)",
+      },
+    },
   },
   {
     "stevearc/oil.nvim",

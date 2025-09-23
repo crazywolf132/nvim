@@ -34,7 +34,12 @@ end, opts)
 map("n", "<leader>/", function()
   require("fzf-lua").live_grep()
 end, vim.tbl_extend("keep", { desc = "Live grep" }, opts))
-map("n", "<leader>e", vim.diagnostic.open_float, opts)
+map(
+  "n",
+  "gl",
+  vim.diagnostic.open_float,
+  vim.tbl_extend("keep", { desc = "Line diagnostics" }, opts)
+)
 map("n", "<leader>|", "<cmd>vsplit<CR>", vim.tbl_extend("keep", { desc = "Vertical split" }, opts))
 map("n", "<leader>sv", "<cmd>vsplit<CR>", vim.tbl_extend("keep", { desc = "Split right" }, opts))
 map("n", "<leader>sh", "<cmd>split<CR>", vim.tbl_extend("keep", { desc = "Split below" }, opts))
