@@ -23,7 +23,7 @@ map(
   end,
   vim.tbl_extend("keep", { desc = "Toggle inlay hints" }, opts)
 )
-map("n", "<leader>bd", "<cmd>bdelete<CR>", opts)
+map("n", "<leader>bd", "<cmd>WintabsClose<CR>", opts)
 map("n", "<leader>`", "<cmd>b#<CR>", opts)
 map("n", "<leader>bb", function()
   require("buffer_manager.ui").toggle_quick_menu()

@@ -45,6 +45,14 @@ local plugins = {
   },
   {'j-morano/buffer_manager.nvim', dependencies = {'nvim-lua/plenary.nvim'}},
   {
+    "zefei/vim-wintabs",
+    lazy = false,
+    init = function()
+      vim.g.wintabs_display = "none"
+      vim.g.wintabs_autoclose = 1
+    end,
+  },
+  {
     "folke/snacks.nvim",
     priority = 1000,
     lazy = false,
@@ -99,7 +107,6 @@ local plugins = {
       lazygit = { enabled = true, configure = true },
     },
     keys = {
-      { "<leader>bd", function() Snacks.bufdelete() end, desc = "Delete Buffer" },
       { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
       { "<leader>gb", function() Snacks.git.blame_line() end, desc = "Git Blame Line" },
       { "<C-\\>", function() Snacks.terminal() end, desc = "Terminal" },
