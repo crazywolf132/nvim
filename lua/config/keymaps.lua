@@ -7,14 +7,14 @@ local function save()
   vim.cmd.write()
 end
 
-map({ "n", "v" }, "<D-s>", "<cmd>write<CR>", opts)
-map({ "n", "v" }, "<C-s>", "<cmd>write<CR>", opts)
+map({ "n", "v" }, "<D-s>", "<cmd>write<CR>", vim.tbl_extend("keep", { desc = "Write buffer" }, opts))
+map({ "n", "v" }, "<C-s>", "<cmd>write<CR>", vim.tbl_extend("keep", { desc = "Write buffer" }, opts))
 map("i", "<D-s>", save, opts)
 map("i", "<C-s>", save, opts)
 
-map("n", "<leader>ww", "<cmd>write<CR>", opts)
-map("n", "<leader>qq", "<cmd>confirm quit<CR>", opts)
-map("n", "<leader>h", "<cmd>nohlsearch<CR>", opts)
+map("n", "<leader>ww", "<cmd>write<CR>", vim.tbl_extend("keep", { desc = "Write buffer" }, opts))
+map("n", "<leader>qq", "<cmd>confirm quit<CR>", vim.tbl_extend("keep", { desc = "Quit" }, opts))
+map("n", "<leader>h", "<cmd>nohlsearch<CR>", vim.tbl_extend("keep", { desc = "Clear highlights" }, opts))
 map(
   "n",
   "<leader>ti",
@@ -23,14 +23,14 @@ map(
   end,
   vim.tbl_extend("keep", { desc = "Toggle inlay hints" }, opts)
 )
-map("n", "<leader>bd", "<cmd>WintabsClose<CR>", opts)
-map("n", "<leader>`", "<cmd>b#<CR>", opts)
+map("n", "<leader>bd", "<cmd>WintabsClose<CR>", vim.tbl_extend("keep", { desc = "Close buffer" }, opts))
+map("n", "<leader>`", "<cmd>b#<CR>", vim.tbl_extend("keep", { desc = "Alternate buffer" }, opts))
 map("n", "<leader>bb", function()
   require("buffer_manager.ui").toggle_quick_menu()
-end, opts)
+end, vim.tbl_extend("keep", { desc = "Buffer manager" }, opts))
 map("n", "<leader>?", function()
   require("fzf-lua").commands()
-end, opts)
+end, vim.tbl_extend("keep", { desc = "Command palette" }, opts))
 map("n", "<leader>/", function()
   require("fzf-lua").live_grep()
 end, vim.tbl_extend("keep", { desc = "Live grep" }, opts))
